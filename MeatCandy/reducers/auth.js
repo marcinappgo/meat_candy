@@ -7,13 +7,15 @@ export default function authReducer(state = [], data) {
           userLoggedIn: true,
           text: data.user,
           token: data.token,
-          PHPSESSID: data.PHPSESSID
+          PHPSESSID: data.PHPSESSID,
+          updateUserState: false
         };
       }
       case 'AUTH_LOGOUT': {
         return {
           ...state,
           userLoggedIn: false,
+          updateUserState: true,
           text: null
         };
       }

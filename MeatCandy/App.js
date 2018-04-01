@@ -3,24 +3,41 @@ import {
   Platform,
   StyleSheet,
   Text,
-  View, ScrollView, ToolbarAndroid
+  View, ScrollView, ToolbarAndroid, Image
 } from 'react-native';
 import { connect } from 'react-redux';
 import LoginForm from './components/login';
+import Home from './components/home'
+import Target from './components/target'
+import Calendar from './components/calendar'
+import CalendarMonth from './components/calendar-month'
+import CalendarWeek from './components/calendar-week'
+import { StackNavigator } from 'react-navigation'
 
-const mapStateToProps = (state) => {return {
-  userLoggedIn: state.userLoggedIn,
-  text: state.text
-}}
+const mapStateToProps = (state) => {
+  return {
+    updateUserState: state.authReducer.updateUserState
+  }
+}
 
 
 
-export default class App extends Component {
+class App extends Component {
+
+
+  componentWillReceiveProps(nextProps) {
+    if(nextProps.updateUserState === true) {
+      this.setState({
+        userLoggedIn: false
+      });
+    }
+  }
 
   constructor(props) {
     super(props);
     this.state = {
-      userLoggedIn : false
+      userLoggedIn : 0,
+      updateUserState : false
     }
     this.updateUser = this.updateUser.bind(this);
   }
@@ -34,18 +51,38 @@ export default class App extends Component {
   render() {
     if(this.state.userLoggedIn === true) {
       return (
-        <View style={{flex: 1, alignItems: 'center'}}>
-          <Text>INNN</Text>
-          <LoginForm updateUser={this.updateUser} />
-        </View>
+        <Navigator />
       )
-    }else{
+    }else if(this.state.userLoggedIn === false) {
       return (
         <View style={{flex: 1}}>
           <LoginForm updateUser={this.updateUser} />
         </View>
       );
+    }else{
+      return (
+        <View style={{flex: 1}}>
+          <Image
+            source={require('./assets/img/candy.jpg')}
+            resizeMode="contain"
+            style={{flex:1, height: undefined, width: undefined}}
+          />
+          <LoginForm updateUser={this.updateUser} />
+        </View>
+      )
     }
 
   }
-}
+};
+
+
+
+const Navigator = StackNavigator({
+  Home: { screen : Home },
+  Target: { screen : Target },
+  Calendar: { screen : Calendar},
+  CalendarMonth: { screen : CalendarMonth},
+  CalendarWeek: { screen : CalendarWeek}
+});
+
+export default connect(mapStateToProps)(App);

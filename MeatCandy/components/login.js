@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { connect, dispatch } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { View, Text, TextInput, Button, StyleSheet, AsyncStorage } from 'react-native'
+import { View, Text, TextInput, Button, StyleSheet, AsyncStorage, StatusBar, Image } from 'react-native'
 import { loginUser, logoutUser } from '../actions/auth'
 
 const mapStateToProps = (state) => {
@@ -42,15 +42,18 @@ class LoginForm extends Component {
           if(responseJson.status == "success") {
             this.props.loginUser(responseJson.response.user, responseJson.response.token, responseJson.response.PHPSESSID)
           }else{
+            this.props.logoutUser();
             alert(responseJson.message)
           }
 
         })
         .catch(err => {
+          this.props.logoutUser();
           alert("Error: " + err.message + "\n" + err.stack);
         })
       }else{
-        alert('No token');
+        this.props.logoutUser();
+
       }
     });
 
@@ -142,10 +145,15 @@ class LoginForm extends Component {
 
 
 
-    if(!userLoggedIn) {
+    if(userLoggedIn===false) {
       return (
           <View style={{flex: 1}}>
               <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                <Image
+                  source={require('../assets/img/rsz_1rsz_1rsz_1candy.jpg')}
+                  resizeMode="contain"
+                />
+
                 <TextInput
                     style={{height: 40, width: 200, marginBottom: 50, borderColor: 'gray'}}
                     onChangeText={(username) => this.setState({username})}
@@ -168,9 +176,13 @@ class LoginForm extends Component {
               </View>
           </View>
       );
-    }else{
+    }else if(userLoggedIn===true){
       return (
         <View>
+        <StatusBar
+           backgroundColor="blue"
+           barStyle="light-content"
+         />
           <Text>Loggged as: {text}</Text>
           <Button
             onPress={() => this.logout()}
@@ -179,6 +191,10 @@ class LoginForm extends Component {
           />
 
         </View>
+      )
+    }else{
+      return (
+        <View></View>
       )
     }
 
