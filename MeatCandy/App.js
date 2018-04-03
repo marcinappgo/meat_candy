@@ -12,6 +12,8 @@ import Target from './components/target'
 import Calendar from './components/calendar'
 import CalendarMonth from './components/calendar-month'
 import CalendarWeek from './components/calendar-week'
+import Plan from './components/plan'
+import Visit from './components/visit'
 import { StackNavigator } from 'react-navigation'
 
 const mapStateToProps = (state) => {
@@ -82,7 +84,9 @@ const Navigator = StackNavigator({
   Target: { screen : Target },
   Calendar: { screen : Calendar},
   CalendarMonth: { screen : CalendarMonth},
-  CalendarWeek: { screen : CalendarWeek}
+  CalendarWeek: { screen : CalendarWeek},
+  Plan: { screen : Plan },
+  Visit : { screen : Visit }
 });
 
 export default connect(mapStateToProps)(App);

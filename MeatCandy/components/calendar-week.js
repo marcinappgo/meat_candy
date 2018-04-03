@@ -142,6 +142,7 @@ class CalendarWeek extends Component {
     })
 
     let posListFiltered = posList.map((pos) => <Pos
+      key={pos.pos_id}
      pos={pos}
      week={this.props.navigation.state.params.week}
      month={this.props.navigation.state.params.month + 1}

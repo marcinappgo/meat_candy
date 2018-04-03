@@ -6,6 +6,7 @@ import {
 import { connect, dispatch } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { logoutUser } from '../actions/auth'
+import styles from '../containers/styles'
 
 const mapStateToProps = (state) => {
   return {
@@ -67,7 +68,7 @@ class Home extends Component {
 
         <TouchableHighlight
          style={styles.button}
-
+         onPress={() => navigate('Plan')}
         >
          <Text style={styles.buttonText}> Nowa wizyta </Text>
         </TouchableHighlight>
@@ -96,30 +97,5 @@ class Home extends Component {
     )
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 10
-  },
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#00ACEC',
-    padding: 30,
-    margin: 10
-  },
-  buttonText: {
-    fontSize: 20,
-    color: '#FFFFFF'
-  },
-  countContainer: {
-    alignItems: 'center',
-    padding: 10
-  },
-  countText: {
-    color: '#FF00FF'
-  }
-})
 
 export default connect(mapStateToProps, mapDispatchToProps)(Home);

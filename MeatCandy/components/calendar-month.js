@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import { View, StyleSheet, TouchableHighlight, Text, ScrollView } from 'react-native';
+import styles from '../containers/styles'
 
 class CalendarMonth extends Component {
 
@@ -47,6 +48,7 @@ class CalendarMonth extends Component {
 
       weeks.push(
         <TouchableHighlight
+        key={i}
          style={styles.button}
          onPress={() => navigate('CalendarWeek', {month:state.params.month, week: i})}
         >
@@ -65,16 +67,3 @@ class CalendarMonth extends Component {
 }
 
 export default CalendarMonth;
-
-const styles = StyleSheet.create({
-  button: {
-    alignItems: 'center',
-    backgroundColor: '#00ACEC',
-    padding: 30,
-    margin: 10
-  },
-  buttonText: {
-    fontSize: 20,
-    color: '#FFFFFF'
-  }
-})
