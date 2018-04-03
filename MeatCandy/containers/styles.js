@@ -11,7 +11,8 @@ export default styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 20,
-    color: '#FFFFFF'
+    color: '#FFFFFF',
+    textAlign: 'left'
   },
   buttonSmall: {
     alignItems: 'center',
@@ -83,5 +84,8 @@ export default styles = StyleSheet.create({
     alignItems: 'center',
     margin: 5,
     padding: 5
+  },
+  boldText: {
+    fontWeight: 'bold'
   }
 })

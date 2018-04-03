@@ -12,7 +12,7 @@ const mapStateToProps = (state) => {
   }
 }
 
-class VisitPosMaterial extends Component {
+class VisitExposition extends Component {
 
 
 
@@ -20,13 +20,13 @@ class VisitPosMaterial extends Component {
       super(props)
 
       this.state = {
-        pos_material : this.props.pos_material,
+        exposition : this.props.exposition,
         modalVisible : false,
         categories : []
       }
 
       this.toggleModal = this.toggleModal.bind(this)
-      this.updatePosMaterial = this.updatePosMaterial.bind(this)
+      this.updateExposition = this.updateExposition.bind(this)
   }
   componentWillMount() {
 
@@ -54,12 +54,12 @@ class VisitPosMaterial extends Component {
       })
   }
 
-  updatePosMaterial() {
+  updateExposition() {
 
     this.setState({
-      pos_material : this.state.pos_material
+      exposition : this.state.exposition
     }, () => {
-      this.props.updatePosMaterial(this.state.pos_material);
+      this.props.updateExposition(this.state.exposition);
       this.toggleModal();
     })
 
@@ -67,23 +67,23 @@ class VisitPosMaterial extends Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if("undefined" != typeof nextProps.pos_material) {
+    if("undefined" != typeof nextProps.exposition) {
       this.setState({
-        pos_material : nextProps.pos_material
+        exposition : nextProps.exposition
       })
     }
   }
 
   updatePosAdv(pos) {
-    let pos_material = this.state.pos_material
-    pos_material[pos.id] = pos;
-    this.setState({pos_material})
+    let exposition = this.state.exposition
+    exposition[pos.id] = pos;
+    this.setState({exposition})
 
   }
 
   render() {
 
-    let pos_material = this.state.pos_material
+    let exposition = this.state.exposition
 
     let categories = this.state.categories.map((category) => {
 
@@ -98,8 +98,8 @@ class VisitPosMaterial extends Component {
         photo : ''
       }
 
-      if(category.id in pos_material) {
-        value = pos_material[category.id]
+      if(category.id in exposition) {
+        value = exposition[category.id]
       }
 
       return (
@@ -115,9 +115,9 @@ class VisitPosMaterial extends Component {
             </View>
             <View style={{flex: 2}}>
               <TextInput onChangeText={(text) => {
-                let pos_material = this.state.pos_material
-                pos_material[category.id] = text;
-                this.setState({pos_material});
+                let exposition = this.state.exposition
+                exposition[category.id] = text;
+                this.setState({exposition});
               }}
               keyboardType='numeric'
               value={value}
@@ -135,20 +135,20 @@ class VisitPosMaterial extends Component {
       animation="slide"
       transparent={false}
       visible={this.state.modalVisible}
-      onRequestClose={() => this.updatePosMaterial()}
+      onRequestClose={() => this.updateExposition()}
       >
         <View style={{flex:1}}>
-        <Text style={styles.modalTitle}>Materiały POS</Text>
+        <Text style={styles.modalTitle}>Grupowanie ekspozycji</Text>
           <ScrollView style={{flex: 12}}>
           {categories}
           </ScrollView>
-        <CloseModal closeModal={this.updatePosMaterial} />
+        <CloseModal closeModal={this.updateExposition} />
         </View>
       </Modal>
-      <Stage openModal={this.toggleModal} title="Materiały POS" />
+      <Stage openModal={this.toggleModal} title="Grupowanie ekspozycji" />
       </View>
     )
   }
 }
 
-export default connect(mapStateToProps)(VisitPosMaterial)
+export default connect(mapStateToProps)(VisitExposition)

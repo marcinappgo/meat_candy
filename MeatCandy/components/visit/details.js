@@ -49,17 +49,48 @@ export default class VisitDetails extends Component {
       >
       <View style={{flex: 1}}>
         <Text style={styles.modalTitle}>Szczegóły wizyty</Text>
+
+        <Text>
+          <Text style={styles.boldText}>Numer POS</Text> {this.props.visit.pos_number} (Kategoria {this.props.visit.pos_category})
+        </Text>
+
+        <Text>
+          <Text style={styles.boldText}>Nazwa POS</Text> {this.props.visit.pos_name}
+        </Text>
+
+        <Text>
+          <Text style={styles.boldText}>Sieć</Text> {this.props.visit.pos_network}
+        </Text>
+
+        <Text>
+          <Text style={styles.boldText}>Adres POS</Text> {this.props.visit.pos_address}, {this.props.visit.pos_postal} {this.props.visit.pos_city}
+        </Text>
+
+
+
         <ScrollView style={{flex: 12}}>
-          <TextInput
-          placeholder="Osoba kontaktowa"
-          value={this.state.details.visit_contact_person}
-          onChangeText={(text) => this.setState({
-            details : {
-              ...this.state.details,
-              visit_contact_person : text
-            }
-          })}
-          />
+        <TextInput
+        placeholder="Osoba kontaktowa"
+        value={this.state.details.visit_contact_person}
+        onChangeText={(text) => this.setState({
+          details : {
+            ...this.state.details,
+            visit_contact_person : text
+          }
+        })}
+        />
+
+        <TextInput
+        placeholder="Uwagi"
+        value={this.state.details.visit_remarks}
+        multiline={true}
+        onChangeText={(text) => this.setState({
+          details : {
+            ...this.state.details,
+            visit_remarks : text
+          }
+        })}
+        />
         </ScrollView>
         <CloseModal closeModal={this.updateDetails} />
         </View>
