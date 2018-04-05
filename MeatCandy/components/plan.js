@@ -26,8 +26,8 @@ class Plan extends Component {
     this.selectVisit = this.selectVisit.bind(this);
   }
 
-  componentWillMount() {
-    fetch('https://candy.meatnet.pl/api/new-visit.php', {
+  loadData() {
+    return fetch('https://candy.meatnet.pl/api/new-visit.php', {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -35,19 +35,30 @@ class Plan extends Component {
       }
     }).then((response) => response.json())
     .then((responseJson) => {
+
       if(responseJson.status == 'success') {
         this.setState({
           plan: responseJson.response.plan
         })
+
+
       }else{
 
       }
     }).catch((err) => alert(err))
   }
 
+  componentWillMount() {
+      this.loadData();
+  }
+
+  navigateBack() {
+    this.setState({state : this.state});
+  }
+
   selectVisit(visit) {
     const { navigate } = this.props.navigation;
-    navigate('Visit', { visit });
+    navigate('Visit', { visit: visit, navigateBack : this.navigateBack.bind(this) });
   }
 
   render() {

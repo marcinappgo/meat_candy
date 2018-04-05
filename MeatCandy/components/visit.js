@@ -9,6 +9,7 @@ import VisitTraining from './visit/training'
 import VisitPosMaterial from './visit/pos_material'
 import VisitExposition from './visit/exposition'
 import VisitOrderProduct from './visit/order_product'
+import { NavigationActions } from 'react-navigation'
 
 const mapStateToProps = (state) => {
   return {
@@ -160,13 +161,23 @@ class Visit extends Component {
             if(list) {
               list = JSON.parse(list)
             }else{
-              list = [];
+              list = {};
             }
 
 
-            list.push(this.state.visit);
+            list[this.state.visit_id] = this.state.visit;
             AsyncStorage.setItem('@CandyMerch:visitToSync', JSON.stringify(list)).then(() => {
-              this.props.navigation.goBack()
+
+              const resetAction = NavigationActions.reset({
+                index: 1,
+                actions: [
+                  NavigationActions.navigate({ routeName: 'Home'}),
+                  NavigationActions.navigate({ routeName: 'Plan'})
+                ]
+              })
+              this.props.navigation.dispatch(resetAction)
+
+
             }).catch((err) => {console.warn(err)})
           }).catch((err) => {console.warn(err)})
         }).catch((err) => {console.warn(err)})

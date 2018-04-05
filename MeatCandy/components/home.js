@@ -75,7 +75,7 @@ class Home extends Component {
 
         <TouchableHighlight
          style={styles.button}
-
+         onPress={() => navigate('Sync')}
         >
          <Text style={styles.buttonText}> Lista wizyt </Text>
         </TouchableHighlight>
