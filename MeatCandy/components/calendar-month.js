@@ -161,6 +161,37 @@ class CalendarMonth extends Component {
         })
     }
 
+    getWorkingDays(month, week) {
+        let weekCount = this.weekCount(month + 1);
+
+        if(week == 1) {
+            let year = new Date().getFullYear();
+            let firstDay = new Date(year, month, 1).getDay();
+
+            if(firstDay == 0 || firstDay == 6) {
+                return 0;
+            }else{
+                return 6 - firstDay;
+            }
+
+
+        }else if(week == weekCount) {
+            let year = new Date().getFullYear();
+            let lastDay = new Date(year, month + 1, 0).getDay();
+
+
+
+            if(lastDay == 0 || lastDay == 6) {
+                return 5;
+            }else{
+                return lastDay;
+            }
+
+        }else {
+            return 5;
+        }
+    }
+
     toggleDayOff(k, dayOff={}) {
         if(k in this.state.dayOff) {
             let id = this.state.dayOff[k]
@@ -221,7 +252,7 @@ class CalendarMonth extends Component {
 
                 let dayList = [];
 
-                for(let j=1; j<=5; j++) {
+                for(let j=1; j<=this.getWorkingDays(state.params.month, i); j++) {
                     let k = (state.params.month + 1) + '-' + i + '-' + j;
 
                     if(k in this.state.dayOff) {

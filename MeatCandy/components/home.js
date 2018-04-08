@@ -58,6 +58,7 @@ class Home extends Component {
         this.state = {
             state : 'end',
             startTimeModalVisible: false,
+            endTimeModalVisible: false,
             startTimeDistance : ""
         }
     }
@@ -107,26 +108,38 @@ class Home extends Component {
         })
     }
 
+    endTrackingModal() {
+        this.setState({
+            endTimeModalVisible: true
+        })
+    }
+
     async endTracking() {
+        if(!this.state.startTimeDistance)return;
+
         await AsyncStorage.getItem('@CandyMerch:workTimeState').then((state) => {
             if(state) {
                 state = JSON.parse(state);
             }else{
                 state = [{
                     state : 'end',
-                    date : Date.now()
+                    date : Date.now(),
+                    distance : ""
                 }];
             }
 
             let newState = {
                 state : 'end',
-                date : Date.now()
+                date : Date.now(),
+                distance : this.state.startTimeDistance
             }
 
             state.push(newState);
 
             this.setState({
-                state : newState.state
+                state : newState.state,
+                endTimeModalVisible : false,
+                startTimeDistance: ""
             }, () => {
                 AsyncStorage.setItem('@CandyMerch:workTimeState', JSON.stringify(state))
             })
@@ -138,6 +151,13 @@ class Home extends Component {
         await AsyncStorage.getItem('@CandyMerch:workTimeState').then((state) => {
             if(state) {
                 state = JSON.parse(state);
+
+                if(state.length == 0) {
+                    state = [{
+                        state : 'end',
+                        date : Date.now()
+                    }];
+                }
             }else{
                 state = [{
                     state : 'end',
@@ -164,7 +184,7 @@ class Home extends Component {
                 <Text style={styles.buttonText}> Start pracy </Text>
             </TouchableHighlight>;
         }else{
-            topButton = <TouchableHighlight style={styles.button} onPress={() => {this.endTracking()}}>
+            topButton = <TouchableHighlight style={styles.button} onPress={() => {this.endTrackingModal()}}>
                 <Text style={styles.buttonText}> Koniec pracy </Text>
             </TouchableHighlight>;
         }
@@ -181,10 +201,27 @@ class Home extends Component {
 
                     <View style={{flex:1}}>
                         <Text style={styles.modalTitle}>Podaj stan licznika</Text>
-                        <TextInput onChange={(value) => {
+                        <TextInput onChangeText={(value) => {
                             this.setDistance(value)
                         }} placeholder="Podaj stan licznika" keyboardType="numeric"/>
                         <CloseModal closeModal={this.startTracking.bind(this)} />
+                    </View>
+                </Modal>
+
+                <Modal
+                    visible={this.state.endTimeModalVisible}
+                    style={styles.modal}
+                    animation="slide"
+                    transparent={false}
+                    onRequestClose={() => {}}
+                >
+
+                    <View style={{flex:1}}>
+                        <Text style={styles.modalTitle}>Podaj stan licznika</Text>
+                        <TextInput onChangeText={(value) => {
+                            this.setDistance(value)
+                        }} placeholder="Podaj stan licznika" keyboardType="numeric"/>
+                        <CloseModal closeModal={this.endTracking.bind(this)} />
                     </View>
                 </Modal>
 

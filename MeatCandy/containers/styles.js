@@ -69,6 +69,11 @@ export default styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 20
     },
+    smallTitle: {
+        fontSize: 10,
+        textAlign: 'center',
+        marginBottom: 0
+    },
     list: {
         flex: 1,
         flexDirection: 'row',

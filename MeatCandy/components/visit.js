@@ -9,6 +9,7 @@ import VisitTraining from './visit/training'
 import VisitPosMaterial from './visit/pos_material'
 import VisitExposition from './visit/exposition'
 import VisitOrderProduct from './visit/order_product'
+import VisitImages from './visit/images'
 import {NavigationActions} from 'react-navigation'
 import CloseModal from '../containers/close-modal'
 
@@ -43,6 +44,7 @@ class Visit extends Component {
                 order_product: {},
                 pos_material: {},
                 training: {},
+                images: [],
                 visit_obj: this.props.navigation.state.params.visit
             },
             visit_id: this.props.navigation.state.params.visit.visit_plan_id,
@@ -51,13 +53,13 @@ class Visit extends Component {
         }
     }
 
-    componentWillMount() {
-        this.loadVisitFromStorage();
+    async componentWillMount() {
+        await this.loadVisitFromStorage();
     }
 
 
     loadVisitFromStorage() {
-        AsyncStorage.getItem('@CandyMerch:visitDetails' + this.state.visit_id)
+        return AsyncStorage.getItem('@CandyMerch:visitDetails' + this.state.visit_id)
             .then((visit) => {
                 if (visit) {
                     visit = JSON.parse(visit);
@@ -68,6 +70,7 @@ class Visit extends Component {
     }
 
     saveVisitToStorage() {
+
         let data = JSON.stringify(this.state.visit);
         return AsyncStorage.setItem('@CandyMerch:visitDetails' + this.state.visit_id, data);
     }
@@ -124,6 +127,15 @@ class Visit extends Component {
             visit: {
                 ...this.state.visit,
                 exposition: exposition
+            }
+        }, () => this.saveVisitToStorage());
+    }
+
+    updateImages(images) {
+        this.setState({
+            visit: {
+                ...this.state.visit,
+                images: images
             }
         }, () => this.saveVisitToStorage());
     }
@@ -253,6 +265,8 @@ class Visit extends Component {
                                    updateTraining={this.updateTraining.bind(this)}/>
                     <VisitOrderProduct order_product={this.state.visit.order_product}
                                        updateOrderProduct={this.updateOrderProduct.bind(this)}/>
+                    <VisitImages images={this.state.visit.images}
+                                       updateImages={this.updateImages.bind(this)}/>
 
                     <View style={styles.borderedView}>
                         <Button title="Zamknij wizytę" onPress={this.closeVisit.bind(this)}/>

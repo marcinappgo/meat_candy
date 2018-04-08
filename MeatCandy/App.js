@@ -13,6 +13,7 @@ import Calendar from './components/calendar'
 import CalendarMonth from './components/calendar-month'
 import CalendarWeek from './components/calendar-week'
 import Plan from './components/plan'
+import DayPlan from './components/day-plan'
 import Visit from './components/visit'
 import Sync from './components/visit/sync'
 import {StackNavigator, DrawerNavigator} from 'react-navigation'
@@ -86,6 +87,7 @@ const Navigator = StackNavigator({
     CalendarMonth: {screen: CalendarMonth},
     CalendarWeek: {screen: CalendarWeek},
     Plan: {screen: Plan},
+    DayPlan: {screen: DayPlan},
     Visit: {screen: Visit},
     Sync: {screen: Sync}
 }, {

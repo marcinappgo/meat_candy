@@ -61,8 +61,9 @@ class Visit extends Component {
        // onPress={() => navigate('CalendarWeek', {month:state.params.month, week: i})}
        onPress={this.selectVisit.bind(this)}
       >
-       <Text style={!this.state.active?styles.selectedButtonText:styles.buttonText}>
-        {visit.pos_category} - {visit.pos_number} - {visit.pos_name}
+       <Text style={[styles.pos,!this.state.active?styles.selectedButtonText:styles.buttonText]}>
+           {visit.pos_category} - {visit.pos_number} - {visit.pos_network} - {visit.pos_city} - {visit.pos_name}{"\n"}
+         <Text style={styles.posSubtitle}>{visit.pos_address}</Text>
        </Text>
       </TouchableHighlight>
     )
