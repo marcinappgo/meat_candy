@@ -69,16 +69,27 @@ export default class VisitDetails extends Component {
 
 
         <ScrollView style={{flex: 12}}>
-        <TextInput
-        placeholder="Osoba kontaktowa"
-        value={this.state.details.visit_contact_person}
-        onChangeText={(text) => this.setState({
-          details : {
-            ...this.state.details,
-            visit_contact_person : text
-          }
-        })}
-        />
+          <TextInput
+              placeholder="Osoba kontaktowa"
+              value={this.state.details.visit_contact_person}
+              onChangeText={(text) => this.setState({
+                  details : {
+                      ...this.state.details,
+                      visit_contact_person : text
+                  }
+              })}
+          />
+
+          <TextInput
+              placeholder="Numer telefonu"
+              value={this.state.details.visit_contact_person_phone}
+              onChangeText={(text) => this.setState({
+                  details : {
+                      ...this.state.details,
+                      visit_contact_person_phone : text
+                  }
+              })}
+          />
 
         <TextInput
         placeholder="Uwagi"

@@ -9,7 +9,8 @@ class Visit extends Component {
     super(props);
 
     this.state = {
-      active : 1
+      active : 1,
+        canceled: false
     }
   }
 
@@ -20,7 +21,8 @@ class Visit extends Component {
         visit = JSON.parse(visit);
         if('visit_obj' in visit && visit.visit_obj.visit_plan_visit_id != 0) {
           this.setState({
-            active : 0
+            active : 0,
+              canceled: visit.visit_obj.visit_plan_visit_id == -2
           })
         }
       }
@@ -42,9 +44,20 @@ class Visit extends Component {
 
     const {visit} = this.props;
 
+    let stylesArr = [];
+    if(this.state.active) {
+      stylesArr.push(styles.button)
+    }else{
+      stylesArr.push(styles.selectedButton)
+
+      if(this.state.canceled) {
+        stylesArr.push(styles.posAplus)
+      }
+    }
+
     return (
       <TouchableHighlight
-       style={!this.state.active?styles.selectedButton:styles.button}
+       style={stylesArr}
        // onPress={() => navigate('CalendarWeek', {month:state.params.month, week: i})}
        onPress={this.selectVisit.bind(this)}
       >

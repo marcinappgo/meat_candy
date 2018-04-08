@@ -21,16 +21,39 @@ class Pos extends Component {
 
   render() {
 
-    const {pos} = this.props;
+    const {pos, aplus} = this.props;
+
+    let stylesArr = [];
+    let stylesArrT = [];
+
+
+
+
+    if(this.state.selected){
+        stylesArr.push(styles.pos);
+        stylesArr.push(styles.selectedButtonText);
+        stylesArrT.push(styles.selectedButton);
+    }else{
+        stylesArr.push(styles.pos);
+        stylesArr.push(styles.buttonText);
+        stylesArrT.push(styles.button);
+    }
+
+    if(pos.pos_id in this.props.aplus && pos.visit_plan_id == 0)
+      stylesArrT.push(styles.posAplus)
+
+
+
 
     return (
       <TouchableHighlight
-       style={this.state.selected?styles.selectedButton:styles.button}
+       style={stylesArrT}
        // onPress={() => navigate('CalendarWeek', {month:state.params.month, week: i})}
        onPress={() => this.updateSelected(!this.state.selected)}
       >
-       <Text style={this.state.selected?styles.selectedButtonText:styles.buttonText}>
-        {pos.pos_category} - {pos.pos_number} - {pos.pos_name}
+       <Text style={stylesArr}>
+        {pos.pos_category} - {pos.pos_number} - {pos.pos_network} - {pos.pos_city} - {pos.pos_name}{"\n"}
+        <Text style={styles.posSubtitle}>{pos.pos_address}</Text>
        </Text>
       </TouchableHighlight>
     )
