@@ -49,9 +49,11 @@ export default class VisitImages extends Component {
                 ImagePicker.launchCamera({
                     title: 'Zrób zdjęcie',
                     storageOptions : {
-                        skipBackup: true,
+                        skipBackup: false,
                         path: 'images'
-                    }
+                    },
+                    maxWidth: 1024,
+                    maxHeight: 1024
                 }, (response) => {
                     if(response.didCancel) {
 
