@@ -216,6 +216,7 @@ class VisitExtendedCompetition extends Component {
                     >
                         <View style={{flex: 1}}>
                             <Text style={styles.modalTitle}>Rozszerzone Badanie konkurencji</Text>
+                            <Text style={{fontSize: 16, textAlign: 'center', marginLeft: 10, marginRight: 10, marginBottom: 10}}>{this.props.taskObj.additional_task_description}</Text>
                             <Button title="Dodaj wpis" onPress={() => this.setState({
                                 modalCategoryVisible: true
                             })} style={{margin: 5}}/>
