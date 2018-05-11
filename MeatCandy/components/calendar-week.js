@@ -1,5 +1,16 @@
 import React, {Component} from 'react'
-import {View, StyleSheet, TouchableHighlight, Text, ScrollView, Button, TextInput, Alert, Modal} from 'react-native';
+import {
+    View,
+    StyleSheet,
+    TouchableHighlight,
+    Text,
+    ScrollView,
+    Button,
+    TextInput,
+    Alert,
+    Modal,
+    AsyncStorage
+} from 'react-native';
 import {connect} from 'react-redux';
 import Pos from '../containers/pos'
 import styles from '../containers/styles'
@@ -8,6 +19,7 @@ import GroupedPosList from '../containers/grouped-pos-list'
 import MyButton from '../containers/my-button'
 import CloseModal from '../containers/close-modal'
 import PosModal from '../containers/pos-modal'
+import {API_URL} from "../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -47,7 +59,8 @@ class CalendarWeek extends Component {
             option: 'filter',
             modalVisible: false,
             modalExtraVisible: false,
-            panelGroup: false
+            panelGroup: false,
+            closedVisits: []
         }
 
         this.save = this.save.bind(this);
@@ -57,22 +70,60 @@ class CalendarWeek extends Component {
 
     }
 
+    async syncPlan() {
+        await fetch(API_URL + 'api/new-visit.php', {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                "User-Token": this.props.token
+            }
+        }).then((response) => response.json())
+            .then((responseJson) => {
+
+                if (responseJson.status == 'success') {
+                    this.setState({
+                        plan: responseJson.response.plan
+                    })
+
+                    AsyncStorage.setItem('@CandyMerch:plan', JSON.stringify(responseJson.response.plan))
+
+                } else {
+
+                }
+            }).catch((err) => alert(err))
+    }
+
     save() {
+
+
 
         let year = new Date().getFullYear();
         let month = this.state.month;
         let week = this.state.week;
         let day = this.state.day;
 
+        let posToSend = this.state.posToSend;
+
+        for (let i in this.state.closedVisits) {
+
+            let pos_id = this.state.closedVisits[i].visit_obj.visit_plan_pos_id;
+
+            let ind = posToSend.indexOf(pos_id)
+            if(ind != -1) {
+                posToSend.splice(ind,1)
+            }
+
+        }
 
         let fd = new FormData();
-        fd.append('ids', JSON.stringify(this.state.posToSend));
+        fd.append('ids', JSON.stringify(posToSend));
         fd.append('week', week);
         fd.append('month', month);
         fd.append('day', day);
-        fd.append('type','obligatory')
+        fd.append('type', 'obligatory')
+        fd.append('locked', JSON.stringify(Object.keys(this.state.closedVisits)))
 
-        fetch('https://candy.meatnet.pl/api/calendar.php', {
+        fetch(API_URL + 'api/calendar.php', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -84,13 +135,18 @@ class CalendarWeek extends Component {
             .then((response) => response.json())
             .then((responseJson) => {
                 if (responseJson.status == 'success') {
-                    Alert.alert('Gotowe!','Zapisane pozycje w ' + this.state.week + ' tygodniu ' + this.state.month + ' miesiąca: ' + this.state.posToSend.length);
+                    this.syncPlan();
+                    Alert.alert('Gotowe!', 'Zapisane pozycje w ' + this.state.week + ' tygodniu ' + this.state.month + ' miesiąca: ' + this.state.posToSend.length);
                 } else if (responseJson.status == 'error') {
-                    alert(responseJson.message);
+                    Alert.alert('Błąd',responseJson.message);
                 }
             })
             .catch((err) => {
-                alert(JSON.stringify(err))
+
+                Alert.alert('Wyjątek',JSON.stringify(err));
+
+                // alert('Error');
+                // alert(JSON.stringify(err))
             })
     }
 
@@ -107,9 +163,9 @@ class CalendarWeek extends Component {
         fd.append('week', week);
         fd.append('month', month);
         fd.append('day', day);
-        fd.append('type','additional')
+        fd.append('type', 'additional')
 
-        fetch('https://candy.meatnet.pl/api/calendar.php', {
+        fetch(API_URL + 'api/calendar.php', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -123,9 +179,10 @@ class CalendarWeek extends Component {
                 if (responseJson.status == 'success') {
                     let len = this.state.posToSendExtra.length
                     this.setState({
-                        posToSendExtra : []
+                        posToSendExtra: []
                     })
-                    Alert.alert('Gotowe!','Zapisane pozycje dodatkowe w ' + this.state.week + ' tygodniu ' + this.state.month + ' miesiąca: ' + len);
+                    this.syncPlan();
+                    Alert.alert('Gotowe!', 'Zapisane pozycje dodatkowe w ' + this.state.week + ' tygodniu ' + this.state.month + ' miesiąca: ' + len);
                 } else if (responseJson.status == 'error') {
                     alert(responseJson.message);
                 }
@@ -167,7 +224,7 @@ class CalendarWeek extends Component {
         let week = this.state.week;
         let day = this.state.day;
 
-        fetch('https://candy.meatnet.pl/api/calendar.php?month=' + month + '&week' + week + '&day' + day, {
+        fetch(API_URL + 'api/calendar.php?month=' + month + '&week' + week + '&day' + day, {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -197,6 +254,19 @@ class CalendarWeek extends Component {
             }).catch((err) => {
             alert(JSON.stringify(err))
         })
+
+        AsyncStorage.getItem('@CandyMerch:visitToSync').then((list) => {
+            if (list) {
+                list = JSON.parse(list)
+            } else {
+                list = {};
+            }
+
+            this.setState({
+                closedVisits: list
+            })
+
+        })
     }
 
     updateFilter(text) {
@@ -221,13 +291,13 @@ class CalendarWeek extends Component {
         let k = month + '-' + week + '-' + day
 
         let dayOff = {
-            month : month + 1,
-            week : week,
-            day : day,
-            reason : reason
+            month: month + 1,
+            week: week,
+            day: day,
+            reason: reason
         }
 
-        this.props.navigation.state.params.toggleDayOff(k,dayOff).then(() => {
+        this.props.navigation.state.params.toggleDayOff(k, dayOff).then(() => {
             this.toggleModal();
             this.props.navigation.goBack();
         });
@@ -235,25 +305,25 @@ class CalendarWeek extends Component {
 
     toggleModal() {
         this.setState({
-            modalVisible:!this.state.modalVisible
+            modalVisible: !this.state.modalVisible
         })
     }
 
     toggleModalExtra() {
         this.setState({
-            modalExtraVisible:!this.state.modalExtraVisible
+            modalExtraVisible: !this.state.modalExtraVisible
         })
     }
 
     togglePanelGroup() {
         this.setState({
-            panelGroup:!this.state.panelGroup
+            panelGroup: !this.state.panelGroup
         })
     }
 
     render() {
         let posList = this.state.posList.filter((pos) => {
-            if(pos.pos_id in this.state.aplus) {
+            if (pos.pos_id in this.state.aplus) {
                 if (
                     (pos.visit_plan_day != this.props.navigation.state.params.day
                         || pos.visit_plan_week != this.props.navigation.state.params.week)
@@ -266,7 +336,7 @@ class CalendarWeek extends Component {
                 if (
                     (pos.visit_plan_day != this.props.navigation.state.params.day
                         || pos.visit_plan_week != this.props.navigation.state.params.week)
-                        && pos.visit_plan_month == this.props.navigation.state.params.month + 1
+                    && pos.visit_plan_month == this.props.navigation.state.params.month + 1
                 ) {
                     return false;
                 }
@@ -275,15 +345,15 @@ class CalendarWeek extends Component {
             return true;
         })
 
-        if(this.state.posFilter.length > 3) {
+        if (this.state.posFilter.length > 3) {
             posList = posList.filter((pos) => {
 
                 let str = "";
-                for(let value in pos) {
+                for (let value in pos) {
                     str = str + pos[value] + "";
                 }
 
-                if((str.toLowerCase()).indexOf(this.state.posFilter.toLowerCase()) >= 0) {
+                if ((str.toLowerCase()).indexOf(this.state.posFilter.toLowerCase()) >= 0) {
                     return true;
                 }
                 return false
@@ -296,32 +366,41 @@ class CalendarWeek extends Component {
 
         let panelGroup;
 
-        if(this.state.panelGroup) {
+        if (this.state.panelGroup) {
             panelGroup = (
                 <View style={{flexDirection: 'row', flex: 1}}>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Sieć" onPress={() => {this.setOption('network')}}/>
+                        <ButtonSmall title="Sieć" onPress={() => {
+                            this.setOption('network')
+                        }}/>
                     </View>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Kategoria" onPress={() => {this.setOption('category')}}/>
+                        <ButtonSmall title="Kategoria" onPress={() => {
+                            this.setOption('category')
+                        }}/>
                     </View>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Miasto" onPress={() => {this.setOption('city')}}/>
+                        <ButtonSmall title="Miasto" onPress={() => {
+                            this.setOption('city')
+                        }}/>
                     </View>
                 </View>
             )
         }
 
-        if(this.state.option == 'filter') {
-            posListFiltered = posList.map((pos) => <Pos
-                key={pos.pos_id}
-                pos={pos}
-                day={this.props.navigation.state.params.day}
-                week={this.props.navigation.state.params.week}
-                month={this.props.navigation.state.params.month + 1}
-                togglePos={this.togglePos}
-                aplus={this.state.aplus}
-            />)
+        if (this.state.option == 'filter') {
+            posListFiltered = posList.map((pos) => {
+                return <Pos
+                    key={pos.pos_id}
+                    pos={pos}
+                    day={this.props.navigation.state.params.day}
+                    week={this.props.navigation.state.params.week}
+                    month={this.props.navigation.state.params.month + 1}
+                    togglePos={this.togglePos}
+                    aplus={this.state.aplus}
+                    locked={this.state.closedVisits}
+                />
+            })
 
             panelFilter = (
                 <View style={styles.panelFilter}>
@@ -335,13 +414,13 @@ class CalendarWeek extends Component {
                     </View>
                 </View>
             )
-        }else{
+        } else {
             let groupField = 'pos_' + this.state.option;
 
             let groupedPos = {};
-            for(let pos of posList) {
+            for (let pos of posList) {
                 let groupValue = pos[groupField] + " ";
-                if(!(groupValue in groupedPos)) {
+                if (!(groupValue in groupedPos)) {
                     groupedPos[groupValue] = [];
                 }
 
@@ -349,14 +428,14 @@ class CalendarWeek extends Component {
             }
 
             posListFiltered = (
-                <GroupedPosList groups={groupedPos} togglePos={this.togglePos} day={this.props.navigation.state.params.day}
+                <GroupedPosList groups={groupedPos} togglePos={this.togglePos}
+                                day={this.props.navigation.state.params.day}
                                 week={this.props.navigation.state.params.week}
                                 month={this.props.navigation.state.params.month + 1}
                                 aplus={this.state.aplus}
+                                locked={this.state.closedVisits}
                 />
             )
-
-
 
 
         }
@@ -369,15 +448,17 @@ class CalendarWeek extends Component {
                     animation="slide"
                     transparent={false}
                     visible={this.state.modalVisible}
-                    onRequestClose={() => {}}
+                    onRequestClose={() => {
+                    }}
                 >
-                    <View style={{flex:1}}>
+                    <View style={{flex: 1}}>
                         <Text style={styles.modalTitle}>Ustaw dzień wolny</Text>
                         <MyButton onPress={() => this.setDayOff('Wydarzenie')} title="Wydarzenie"/>
                         <MyButton onPress={() => this.setDayOff('Urlop')} title="Urlop"/>
                         <MyButton onPress={() => this.setDayOff('Zwolnienie')} title="Zwolnienie"/>
+                        <MyButton onPress={() => this.setDayOff('Biuro')} title="Biuro"/>
 
-                        <CloseModal closeModal={() => this.toggleModal()} />
+                        <CloseModal closeModal={() => this.toggleModal()}/>
                     </View>
                 </Modal>
                 <Modal
@@ -385,23 +466,24 @@ class CalendarWeek extends Component {
                     animation="slide"
                     transparent={false}
                     visible={this.state.modalExtraVisible}
-                    onRequestClose={() => {}}
+                    onRequestClose={() => {
+                    }}
                 >
-                    <View style={{flex:1}}>
+                    <View style={{flex: 1}}>
                         <Text style={styles.modalTitle}>Ustaw wizytę dodatkową</Text>
                         <PosModal togglePos={this.togglePosExtra} day={this.props.navigation.state.params.day}
-                                        week={this.props.navigation.state.params.week}
-                                        month={this.props.navigation.state.params.month + 1}
-                                        aplus={{}}
+                                  week={this.props.navigation.state.params.week}
+                                  month={this.props.navigation.state.params.month + 1}
+                                  aplus={{}}
                                   posList={this.state.allPosList}
                         />
 
                         <View style={{flexDirection: 'row'}}>
-                            <View style={{flex : 1}}>
-                                <CloseModal closeModal={() => this.toggleModalExtra()} />
+                            <View style={{flex: 1}}>
+                                <CloseModal closeModal={() => this.toggleModalExtra()}/>
                             </View>
-                            <View style={{flex : 1}}>
-                                <MyButton title="Zapisz wizyty" onPress={() => this.saveExtra()} />
+                            <View style={{flex: 1}}>
+                                <MyButton title="Zapisz wizyty" onPress={() => this.saveExtra()}/>
                             </View>
                         </View>
                     </View>
@@ -411,18 +493,24 @@ class CalendarWeek extends Component {
                         <ButtonSmall title="Grupuj" onPress={() => this.togglePanelGroup()}/>
                     </View>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Filtruj" onPress={() => {this.setOption('filter')}}/>
+                        <ButtonSmall title="Filtruj" onPress={() => {
+                            this.setOption('filter')
+                        }}/>
                     </View>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Wolne" onPress={() => {this.toggleModal()}}/>
+                        <ButtonSmall title="Wolne" onPress={() => {
+                            this.toggleModal()
+                        }}/>
                     </View>
                     <View style={{flex: 1}}>
-                        <ButtonSmall title="Dodatkowa" onPress={() => {this.toggleModalExtra()}}/>
+                        <ButtonSmall title="Dodatkowa" onPress={() => {
+                            this.toggleModalExtra()
+                        }}/>
                     </View>
                 </View>
                 {panelGroup}
                 {panelFilter}
-                <View style={{flex: this.state.option=='filter'?10:11}}>
+                <View style={{flex: this.state.option == 'filter' ? 10 : 11}}>
                     <ScrollView>
                         {posListFiltered}
                     </ScrollView>

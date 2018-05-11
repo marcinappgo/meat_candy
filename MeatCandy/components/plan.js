@@ -4,6 +4,7 @@ import styles from '../containers/styles'
 import Visit from '../containers/visit'
 import Button from '../containers/button'
 import {connect, dispatch} from 'react-redux';
+import {API_URL} from '../misc/Conf'
 
 const mapStateToProps = (state) => {
     return {
@@ -36,7 +37,7 @@ class Plan extends Component {
                     plan: JSON.parse(plan)
                 })
             }else{
-                return fetch('https://candy.meatnet.pl/api/new-visit.php', {
+                return fetch(API_URL + 'api/new-visit.php', {
                     method: 'GET',
                     headers: {
                         Accept: 'application/json',
@@ -192,6 +193,28 @@ class Plan extends Component {
         navigate('Visit', {visit: visit, navigateBack: this.navigateBack.bind(this)});
     }
 
+    getDate(m,w,d) {
+        let date = new Date();
+        date.setMonth(m);
+
+        let dow = 0;
+
+        if(w == 1) {
+            date.setDate(d)
+        }else{
+            date.setDate(1);
+            dow = date.getDay()
+
+            if(dow == 0) {
+                date.setDate(((w-2) * 7) + 1 + d)
+            }else{
+                date.setDate(((w-1) * 7) + 1 + d - dow)
+            }
+        }
+
+        return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear();
+    }
+
     render() {
         const {navigate, state} = this.props.navigation;
         var weeks = new Array();
@@ -216,9 +239,10 @@ class Plan extends Component {
                         plan = this.state.plan[k]
                     }
 
+                    let dd = this.getDate(month,i,j)
 
                     dayList.push(
-                        <Button key={k} title={"Dzień " + j}
+                        <Button key={k} title={"Dzień " + j + ' - ' + dd}
                                 onPress={() => navigate('DayPlan', {month: month, week: i, day: j, plan: plan} )}/>
                     )
                 }

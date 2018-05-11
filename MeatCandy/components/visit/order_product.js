@@ -6,6 +6,7 @@ import CloseModal from '../../containers/close-modal'
 import MyButton from '../../containers/my-button'
 import styles from '../../containers/styles'
 import SkuAdv from '../../containers/sku_adv'
+import {API_URL} from "../../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -37,7 +38,7 @@ class VisitOrderProduct extends Component {
                     products: JSON.parse(sku)
                 })
             }else{
-                fetch('https://candy.meatnet.pl/api/products.php', {
+                fetch(API_URL + 'api/products.php', {
                     method: 'GET',
                     headers: {
                         Accept: 'application/json',

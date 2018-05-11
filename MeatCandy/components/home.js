@@ -8,6 +8,7 @@ import {bindActionCreators} from 'redux';
 import {logoutUser} from '../actions/auth'
 import styles from '../containers/styles'
 import CloseModal from '../containers/close-modal'
+import {API_URL} from "../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -24,7 +25,7 @@ class Home extends Component {
     };
 
     logout = () => {
-        fetch('https://candy.meatnet.pl/api/auth.php?a=logout', {
+        fetch(API_URL + 'api/auth.php?a=logout', {
             method: "GET",
             headers: {
                 Accept: 'application/json'
@@ -151,6 +152,8 @@ class Home extends Component {
         await AsyncStorage.getItem('@CandyMerch:workTimeState').then((state) => {
             if(state) {
                 state = JSON.parse(state);
+
+                //console.warn(state);
 
                 if(state.length == 0) {
                     state = [{

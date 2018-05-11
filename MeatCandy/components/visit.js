@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {ScrollView, AsyncStorage, View, Modal, TextInput, Text} from 'react-native'
+import {ScrollView, Alert, AsyncStorage, View, Modal, TextInput, Text} from 'react-native'
 import {connect} from 'react-redux'
 import styles from '../containers/styles'
 import Button from '../containers/button'
@@ -12,6 +12,7 @@ import VisitOrderProduct from './visit/order_product'
 import VisitImages from './visit/images'
 import {NavigationActions} from 'react-navigation'
 import CloseModal from '../containers/close-modal'
+import VisitExtendedCompetition from './visit/extended_competition'
 
 const mapStateToProps = (state) => {
     return {
@@ -37,7 +38,8 @@ class Visit extends Component {
                     visit_start_time: Date.now(),
                     visit_end_time: '',
                     visit_obligatory: this.props.navigation.state.params.visit.visit_plan_visit_type,
-                    visit_remarks: ''
+                    visit_remarks: '',
+                    visit_reason: ''
                 },
                 competition: [],
                 exposition: {},
@@ -45,7 +47,8 @@ class Visit extends Component {
                 pos_material: {},
                 training: {},
                 images: [],
-                visit_obj: this.props.navigation.state.params.visit
+                visit_obj: this.props.navigation.state.params.visit,
+                task: []
             },
             visit_id: this.props.navigation.state.params.visit.visit_plan_id,
             remarks: "",
@@ -141,18 +144,26 @@ class Visit extends Component {
     }
 
     closeVisit() {
-        if (!"visit_obj" in this.state.visit) {
-            this.setState({
-                visit: {
-                    ...this.state.visit,
-                    visit_obj: this.props.navigation.state.params.visit
+
+        Alert.alert("Zamykanie wizyty", 'Czy na pewno chcesz zamknąć wizytę?', [
+            {text: 'Tak', onPress: () => {
+                if (!"visit_obj" in this.state.visit) {
+                    this.setState({
+                        visit: {
+                            ...this.state.visit,
+                            visit_obj: this.props.navigation.state.params.visit
+                        }
+                    }, () => {
+                        this.setClosedVisit()
+                    })
+                } else {
+                    this.setClosedVisit()
                 }
-            }, () => {
-                this.setClosedVisit()
-            })
-        } else {
-            this.setClosedVisit()
-        }
+            }},
+            {text: 'Nie', onPress: () => console.log('Cancel Pressed'), style: 'cancel'},
+        ]);
+
+
     }
 
     cancelVisit() {
@@ -227,6 +238,16 @@ class Visit extends Component {
         })
     }
 
+    updateTask(taskId, taskData) {
+        task = this.state.visit.task;
+        task[taskId] = taskData;
+        this.setState({
+            visit : {
+                ...this.state.visit,
+                task: task
+            }
+        }, () => this.saveVisitToStorage())
+    }
 
 
     render() {
@@ -239,6 +260,34 @@ class Visit extends Component {
                                     updateExposition={this.updateExposition.bind(this)}/>
             </View>
     )
+
+
+        let additional;
+
+        if(this.state.visit.visit_obj.additional_tasks) {
+
+            if(!this.state.visit.task) {
+                this.setState({
+                    visit : {
+                        ...visit,
+                        task : {}
+                    }
+                })
+            }
+
+            additional = this.state.visit.visit_obj.additional_tasks.map((task) => {
+                if(task.additional_task_is_extended_competition) {
+
+                    return (
+                    <View key={task.additional_task_id} style={styles.borderedView}>
+                        <Text>{task.additional_task_name}</Text>
+                        <VisitExtendedCompetition taskObj={task} task={this.state.visit.task[task.additional_task_id]?this.state.visit.task[task.additional_task_id]:[]}
+                                     updateTask={this.updateTask.bind(this)}/>
+                    </View>
+                    )
+                }
+            })
+        }
 
         return (
             <View>
@@ -267,6 +316,8 @@ class Visit extends Component {
                                        updateOrderProduct={this.updateOrderProduct.bind(this)}/>
                     <VisitImages images={this.state.visit.images}
                                        updateImages={this.updateImages.bind(this)}/>
+
+                    {additional}
 
                     <View style={styles.borderedView}>
                         <Button title="Zamknij wizytę" onPress={this.closeVisit.bind(this)}/>

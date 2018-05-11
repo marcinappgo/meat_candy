@@ -30,7 +30,7 @@ class VisitPosMaterial extends Component {
   }
   componentWillMount() {
 
-    fetch('https://candy.meatnet.pl/api/categories.php', {
+    fetch(API_URL + 'api/categories.php', {
       method: 'GET',
       headers: {
         Accept : 'application/json',

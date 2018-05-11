@@ -3,6 +3,7 @@ import { connect, dispatch } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { View, Text, TextInput, Button, StyleSheet, AsyncStorage, StatusBar, Image } from 'react-native'
 import { loginUser, logoutUser } from '../actions/auth'
+import {API_URL} from "../misc/Conf";
 
 const mapStateToProps = (state) => {
   return {
@@ -28,7 +29,7 @@ class LoginForm extends Component {
   componentDidMount = () => {
     AsyncStorage.getItem('@CandyMerch:userToken').then(token => {
       if(token !== null) {
-        fetch('https://candy.meatnet.pl/api/auth.php', {
+        fetch(API_URL + 'api/auth.php', {
           method: "GET",
           headers: {
             Accept: 'application/json',
@@ -60,7 +61,7 @@ class LoginForm extends Component {
   }
 
   logout = () => {
-    fetch('https://candy.meatnet.pl/api/auth.php?a=logout', {
+    fetch(API_URL + 'api/auth.php?a=logout', {
       method: "GET",
       headers: {
         Accept: 'application/json'
@@ -92,7 +93,7 @@ class LoginForm extends Component {
     fd.append('username', user);
     fd.append('password', password);
 
-    fetch('https://candy.meatnet.pl/api/auth.php', {
+    fetch(API_URL + 'api/auth.php', {
       method: "POST",
       headers: {
         Accept: 'application/json'

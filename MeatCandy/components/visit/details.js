@@ -54,17 +54,17 @@ export default class VisitDetails extends Component {
           <Text style={styles.boldText}>Numer POS</Text> {this.props.visit.pos_number} (Kategoria {this.props.visit.pos_category})
         </Text>
 
+          <Text>
+              <Text style={styles.boldText}>Sieć</Text> {this.props.visit.pos_network}
+          </Text>
+
         <Text>
           <Text style={styles.boldText}>Nazwa POS</Text> {this.props.visit.pos_name}
         </Text>
 
-        <Text>
-          <Text style={styles.boldText}>Sieć</Text> {this.props.visit.pos_network}
-        </Text>
-
-        <Text>
-          <Text style={styles.boldText}>Adres POS</Text> {this.props.visit.pos_address}, {this.props.visit.pos_postal} {this.props.visit.pos_city}
-        </Text>
+          <Text>
+              <Text style={styles.boldText}>Adres POS</Text> {this.props.visit.pos_address}, {this.props.visit.pos_postal} {this.props.visit.pos_city}
+          </Text>
 
 
 
@@ -91,16 +91,28 @@ export default class VisitDetails extends Component {
               })}
           />
 
+            <TextInput
+                placeholder="Cel wizyty"
+                value={this.state.details.visit_reason}
+                multiline={true}
+                onChangeText={(text) => this.setState({
+                    details : {
+                        ...this.state.details,
+                        visit_reason : text
+                    }
+                })}
+            />
+
         <TextInput
-        placeholder="Uwagi"
-        value={this.state.details.visit_remarks}
-        multiline={true}
-        onChangeText={(text) => this.setState({
-          details : {
-            ...this.state.details,
-            visit_remarks : text
-          }
-        })}
+            placeholder="Uwagi"
+            value={this.state.details.visit_remarks}
+            multiline={true}
+            onChangeText={(text) => this.setState({
+              details : {
+                ...this.state.details,
+                visit_remarks : text
+              }
+            })}
         />
         </ScrollView>
         <CloseModal closeModal={this.updateDetails} />

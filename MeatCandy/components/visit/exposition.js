@@ -5,6 +5,7 @@ import Stage from '../../containers/stage'
 import CloseModal from '../../containers/close-modal'
 import PosAdv from '../../containers/pos_adv'
 import styles from '../../containers/styles'
+import {API_URL} from "../../misc/Conf";
 
 const mapStateToProps = (state) => {
   return {
@@ -30,7 +31,7 @@ class VisitExposition extends Component {
   }
   componentWillMount() {
 
-    fetch('https://candy.meatnet.pl/api/categories.php', {
+    fetch(API_URL + 'api/categories.php', {
       method: 'GET',
       headers: {
         Accept : 'application/json',

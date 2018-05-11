@@ -5,6 +5,7 @@ import Button from '../../containers/button'
 import styles from '../../containers/styles'
 import HomeNav from '../../containers/home-nav'
 import RNFS from 'react-native-fs'
+import {API_URL} from "../../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -108,7 +109,7 @@ class Sync extends Component {
 
         let $ret = false;
 
-        await fetch('https://candy.meatnet.pl/api/new-visit.php',{
+        await fetch(API_URL + 'api/new-visit.php',{
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -116,26 +117,27 @@ class Sync extends Component {
             },
             body: fd
         })
-            .then((r) => {
-                // console.warn(r);
+            .then(async (r) => {
+                // console.warn(await r.text());
                 return r.json();
             })
             .then((r) => {
+
                  if(r.status == 'success') {
                      $ret = true;
                  }
                  else
                  {
                      $ret = false;
-                     console.warn(r);
-                     console.warn(visit);
+                     // console.warn(r);
+                     // console.warn(visit);
                  }
 
 
             })
             .catch((err) => {
                 $ret = false;
-                console.error(err);
+                console.warn(err);
                 // alert(err)
             })
 
@@ -152,9 +154,6 @@ class Sync extends Component {
             let visit = visits[key];
 
             let success = await this.sendVisit(visit);
-
-            console.warn(success);
-
 
             if(success) {
                 synced[key] = visit;
@@ -188,7 +187,7 @@ class Sync extends Component {
                 let fd = new FormData;
                 fd.append('work-time', state);
 
-                fetch('https://candy.meatnet.pl/api/work-time.php',{
+                fetch(API_URL + 'api/work-time.php',{
                     method: "POST",
                     headers: {
                         Accept: 'application/json',
@@ -196,7 +195,12 @@ class Sync extends Component {
                     },
                     body: fd
                 }).then(() => {
-                    let state = [];
+                    state = JSON.parse(state);
+                    if(state.length) {
+                        state = [state.pop()]
+                    }else{
+                        state = [];
+                    }
                     AsyncStorage.setItem('@CandyMerch:workTimeState',JSON.stringify(state)).then(() => {
                         this.setState({
                             workTimeState: []
@@ -209,7 +213,7 @@ class Sync extends Component {
     }
 
     async syncSku() {
-        await fetch('https://candy.meatnet.pl/api/products.php', {
+        await fetch(API_URL + 'api/products.php', {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -230,7 +234,7 @@ class Sync extends Component {
     }
 
     async syncPlan() {
-        await fetch('https://candy.meatnet.pl/api/new-visit.php', {
+        await fetch(API_URL + 'api/new-visit.php', {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -257,7 +261,7 @@ class Sync extends Component {
     }
 
     async syncCompetitionCategories() {
-        await fetch('https://candy.meatnet.pl/api/competition.php', {
+        await fetch(API_URL + 'api/competition.php', {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -285,7 +289,7 @@ class Sync extends Component {
     }
 
     async  syncTrainings() {
-        await fetch('https://candy.meatnet.pl/api/trainings.php', {
+        await fetch(API_URL + 'api/trainings.php', {
             method: 'GET',
             headers: {
                 Accept: 'application/json',
@@ -322,7 +326,7 @@ class Sync extends Component {
     }
 
     async syncTarget() {
-        await fetch('https://candy.meatnet.pl/api/targets.php', {
+        await fetch(API_URL + 'api/targets.php', {
             method: "GET",
             headers: {
                 Accept: 'application/json',

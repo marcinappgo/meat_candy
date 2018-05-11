@@ -5,6 +5,7 @@ import Stage from '../../containers/stage'
 import CloseModal from '../../containers/close-modal'
 import Button from '../../containers/button'
 import styles from '../../containers/styles'
+import {API_URL} from "../../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -17,18 +18,36 @@ class VisitTraining extends Component {
     constructor(props) {
         super(props)
 
+        let training = this.props.training;
+        if(!training['ids'])
+            training.ids = [];
+
         this.state = {
-            training: this.props.training,
+            training: training,
             modalVisible: false,
+            modalTrainingsVisible: (training.ids.length > 0),
             trainings: [],
-            showMaterials:false
+            showMaterials:false,
         }
 
         this.toggleModal = this.toggleModal.bind(this)
         this.updateTraining = this.updateTraining.bind(this)
+
+
     }
 
+
+
     componentWillMount() {
+
+        if(this.state.training.ids.length == 0 ) {
+            console.log()
+
+            this.setState({
+                modalTrainingsVisible: true
+            })
+        }
+
 
         AsyncStorage.getItem('@CandyMerch:trainings').then((trainings) => {
             if(trainings) {
@@ -36,7 +55,7 @@ class VisitTraining extends Component {
                     trainings: JSON.parse(trainings)
                 })
             }else{
-                fetch('https://candy.meatnet.pl/api/trainings.php', {
+                fetch(API_URL + 'api/trainings.php', {
                     method: 'GET',
                     headers: {
                         Accept: 'application/json',
@@ -61,6 +80,25 @@ class VisitTraining extends Component {
 
     }
 
+    toggleTraining(training) {
+        let ids = this.state.training.ids;
+        let ind = ids.indexOf(training.id);
+
+        if(ind == -1) {
+            ids.push(training.id)
+        }else{
+            ids.splice(ind, 1);
+        }
+
+
+        this.setState({
+            training : {
+                ...training,
+                ids: ids
+            }
+        });
+    }
+
     toggleModal() {
         this.setState({
             modalVisible: !this.state.modalVisible
@@ -74,8 +112,14 @@ class VisitTraining extends Component {
 
     componentWillReceiveProps(nextProps) {
         if (nextProps.training) {
+
+            let training = nextProps.training;
+
+            if(!training.ids)
+                training.ids = []
+
             this.setState({
-                training: nextProps.training
+                training: training
             })
         }
     }
@@ -104,14 +148,29 @@ class VisitTraining extends Component {
                 stylesA.push(styles.posAplus);
             }
 
-            stylesA.push(styles.button);
+            let ind = -1;
+
+            if(this.state.training.ids) {
+                ind = this.state.training.ids.indexOf(training.id);
+            }
+
+            let stylesText = [];
+
+            if(ind == -1) {
+                stylesA.push(styles.button);
+                stylesText.push(styles.buttonText)
+            }else{
+                stylesA.push(styles.selectedButton);
+                stylesText.push(styles.selectedButtonText)
+            }
+
 
             return (
                 <TouchableHighlight
                     key={training.id}
                     style={stylesA}
                     // onPress={() => navigate('CalendarWeek', {month:state.params.month, week: i})}
-                    onPress={() => this.setState({
+                    onPressNoLonger={() => this.setState({
                         training: {
                             ...training,
                             count: "",
@@ -119,8 +178,9 @@ class VisitTraining extends Component {
                             subject: training.title
                         }
                     })}
+                    onPress={() => this.toggleTraining(training)}
                 >
-                    <Text style={styles.buttonText}>
+                    <Text style={stylesText}>
                         {training.title}
                     </Text>
                 </TouchableHighlight>
@@ -131,19 +191,25 @@ class VisitTraining extends Component {
         let materials;
 
 
+        if(this.state.showMaterials) {
 
-        if(this.state.showMaterials && (this.state.training.materials)) {
+            materials =
+                this.state.trainings.map((training) => {
+                    if(this.state.training.ids.indexOf(training.id) > -1) {
+                        return training.materials.map((material) => {
+                            return (
+                                <Button key={material.source} title={material.name?material.name:material.source.split('/').pop()} onPress={() => this.showMaterials(material.source)} />
+                            )
+                        })
+                    }else{
+                        return null
+                    }
+                })
 
-            // console.warn(this.state.training.materials);//
 
-            materials = this.state.training.materials.map((material, i) => {
-                return (
-                    <Button key={i} title={material.name} onPress={() => this.showMaterials(material.source)} />
-                )
-            })
         }
 
-        if ("undefined" == typeof this.state.training.id) {
+        if (this.state.modalTrainingsVisible) {
             return (
                 <View>
                     <Modal
@@ -158,7 +224,7 @@ class VisitTraining extends Component {
                             <ScrollView style={{flex: 12}}>
                                 {trainings}
                             </ScrollView>
-                            <CloseModal closeModal={this.updateTraining}/>
+                            <CloseModal closeModal={() => this.setState({modalTrainingsVisible: false})}/>
                         </View>
                     </Modal>
                     <Stage openModal={this.toggleModal} title="Szkolenie"/>
@@ -166,7 +232,7 @@ class VisitTraining extends Component {
             )
         } else {
 
-            let title = "Szkolenie: " + this.state.training.title
+            let title = "Szkolenie"
 
             return (
                 <View>
@@ -180,8 +246,8 @@ class VisitTraining extends Component {
                         <View style={{flex: 1}}>
                             <Text style={styles.modalTitle}>{title}</Text>
                             <ScrollView style={{flex: 12}}>
-                                <Button title="Wybierz inne szkolenie" onPress={() => this.setState({
-                                    training: {}
+                                <Button title="Wybierz szkolenia" onPress={() => this.setState({
+                                    modalTrainingsVisible: true
                                 })} style={{margin: 5}}/>
                                 <Button title="Materiały" onPress={() => this.toggleMaterials()} style={{margin: 5}}/>
                                 {materials}

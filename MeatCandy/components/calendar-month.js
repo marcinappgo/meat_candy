@@ -3,6 +3,7 @@ import { connect } from 'react-redux'
 import {View, StyleSheet, TouchableHighlight, Text, ScrollView, Alert} from 'react-native';
 import styles from '../containers/styles'
 import Button from '../containers/button'
+import {API_URL} from '../misc/Conf'
 
 const mapStateToProps = (state) => {
     return {
@@ -40,7 +41,7 @@ class CalendarMonth extends Component {
     }
 
     loadDayOff() {
-        return fetch('https://candy.meatnet.pl/api/day-off.php?month=' + (this.props.navigation.state.params.month + 1), {
+        return fetch(API_URL + 'api/day-off.php?month=' + (this.props.navigation.state.params.month + 1), {
             method: "GET",
             headers: {
                 Accept : 'application/json',
@@ -192,12 +193,34 @@ class CalendarMonth extends Component {
         }
     }
 
+    getDate(m,w,d) {
+        let date = new Date();
+        date.setMonth(m);
+
+        let dow = 0;
+
+        if(w == 1) {
+            date.setDate(d)
+        }else{
+            date.setDate(1);
+            dow = date.getDay()
+
+            if(dow == 0) {
+                date.setDate(((w-2) * 7) + 1 + d)
+            }else{
+                date.setDate(((w-1) * 7) + 1 + d - dow)
+            }
+        }
+
+        return date.getDate() + '/' + (date.getMonth() + 1) + '/' + date.getFullYear();
+    }
+
     toggleDayOff(k, dayOff={}) {
         if(k in this.state.dayOff) {
             let id = this.state.dayOff[k]
             Alert.alert('Dzień wolny','Czy chcesz odwołać dzień wolny?',[
                 {text: 'Tak', onPress: () => {
-                    fetch('https://candy.meatnet.pl/api/day-off.php?id=' + id, {
+                    fetch(API_URL + 'api/day-off.php?id=' + id, {
                         method: "GET",
                         headers: {
                             Accept : 'application/json',
@@ -217,7 +240,7 @@ class CalendarMonth extends Component {
             fd.append('day', dayOff.day);
             fd.append('reason', dayOff.reason);
 
-            return fetch('https://candy.meatnet.pl/api/day-off.php', {
+            return fetch(API_URL + 'api/day-off.php', {
                 method: "POST",
                 headers: {
                     Accept : 'application/json',
@@ -255,12 +278,14 @@ class CalendarMonth extends Component {
                 for(let j=1; j<=this.getWorkingDays(state.params.month, i); j++) {
                     let k = (state.params.month + 1) + '-' + i + '-' + j;
 
+                    let dd = this.getDate(state.params.month,i,j)
+
                     if(k in this.state.dayOff) {
-                        dayList.push(<Button key={k} title={"Dzień " + j + " (Dzień wolny)"}
+                        dayList.push(<Button key={k} title={"Dzień " + j + " - " + dd + " (Dzień wolny)"}
                                 onPress={() => this.toggleDayOff(k)}/>);
                     }else{
                         dayList.push(
-                            <Button key={k} title={"Dzień " + j}
+                            <Button key={k} title={"Dzień " + j + " - " + dd}
                                     onPress={() => navigate('CalendarWeek', {month: state.params.month, week: i, day: j, toggleDayOff:this.toggleDayOff.bind(this)})}/>
                         )
                     }

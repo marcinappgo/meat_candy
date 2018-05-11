@@ -4,6 +4,7 @@ import {connect} from 'react-redux'
 import Stage from '../../containers/stage'
 import CloseModal from '../../containers/close-modal'
 import styles from '../../containers/styles'
+import {API_URL} from "../../misc/Conf";
 
 const mapStateToProps = (state) => {
     return {
@@ -24,6 +25,7 @@ class VisitCompetition extends Component {
 
         this.toggleModal = this.toggleModal.bind(this)
         this.updateCompetition = this.updateCompetition.bind(this)
+        this.inputs = [];
     }
 
     componentWillMount() {
@@ -34,7 +36,7 @@ class VisitCompetition extends Component {
                     categories: JSON.parse(cats)
                 })
             }else{
-                fetch('https://candy.meatnet.pl/api/competition.php', {
+                fetch(API_URL + 'api/competition.php', {
                     method: 'GET',
                     headers: {
                         Accept: 'application/json',
@@ -97,10 +99,31 @@ class VisitCompetition extends Component {
                 }
             }
 
+            this.inputs[category.id] = {
+                general : null,
+                candy : null,
+                hoover : null
+            }
+
             return (
                 <View key={category.id} style={styles.list}>
                     <View style={{flex: 6}}>
                         <Text>{category.title}</Text>
+                    </View>
+                    <View style={{flex: 2}}>
+                        <Text style={styles.smallTitle}>Ogółem</Text>
+                        <TextInput onChangeText={(text) => {
+                            let competition = this.state.competition
+                            competition[category.id].general = parseInt(text)
+                            this.setState({competition});
+                        }}
+                                   keyboardType='numeric'
+                                   value={valueGeneral + ""}
+                                   ref={(r) => this.inputs[category.id].general = r}
+                                   onBlur={() => {
+                                       this.inputs[category.id].candy.focus()
+                                   }}
+                        />
                     </View>
                     <View style={{flex: 2}}>
                         <Text style={styles.smallTitle}>Candy</Text>
@@ -111,6 +134,10 @@ class VisitCompetition extends Component {
                         }}
                                    keyboardType='numeric'
                                    value={valueCandy + ""}
+                                   ref={(r) => this.inputs[category.id].candy = r}
+                                   onBlur={() => {
+                                       this.inputs[category.id].hoover.focus()
+                                   }}
                         />
                     </View>
                     <View style={{flex: 2}}>
@@ -123,19 +150,10 @@ class VisitCompetition extends Component {
                         }}
                                    keyboardType='numeric'
                                    value={valueHoover + ""}
+                                   ref={(r) => this.inputs[category.id].hoover = r}
                         />
                     </View>
-                    <View style={{flex: 2}}>
-                        <Text style={styles.smallTitle}>Ogółem</Text>
-                        <TextInput onChangeText={(text) => {
-                            let competition = this.state.competition
-                            competition[category.id].general = parseInt(text)
-                            this.setState({competition});
-                        }}
-                                   keyboardType='numeric'
-                                   value={valueGeneral + ""}
-                        />
-                    </View>
+
                 </View>
             )
 

@@ -66,7 +66,8 @@ export default class VisitImages extends Component {
                         let images = this.state.images;
                         images.push({
                             source: response.uri,
-                            category: category
+                            category: category,
+                            description: ''
                         })
 
                         this.setState({ images })
@@ -92,6 +93,13 @@ export default class VisitImages extends Component {
                     <View style={{flex:1}}>
 
                         <Text>{image.category}</Text>
+                        <TextInput value={image.description} onChangeText={(text) => {
+                            let imgs = this.state.images;
+                            imgs[i].description = text;
+                            this.setState({
+                                images : imgs
+                            })
+                        }} />
                         <ButtonSmall title="Usuń" onPress={() => {
                             let images = this.state.images;
                             images.splice(i,1);

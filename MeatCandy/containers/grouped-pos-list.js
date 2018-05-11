@@ -37,6 +37,7 @@ export default class GroupedPosList extends Component {
                     month={this.props.month}
                     togglePos={this.props.togglePos}
                     aplus={this.props.aplus}
+                    locked={this.props.closedVisits}
                 />)
             }
 
