@@ -281,6 +281,27 @@ class Sync extends Component {
             }).catch((err) => alert(err));
     }
 
+    async syncExtendedCompetitionCategories() {
+        await fetch(API_URL + 'api/competition_categories.php', {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'User-Token': this.props.token
+            }
+        }).then((response) => response.json())
+            .then((responseJson) => {
+                if (responseJson.status == 'success') {
+                    AsyncStorage.setItem('@CandyMerch:extendedCompetitionCategories',JSON.stringify(responseJson.response.categories)).then(() => {
+                        this.setState({
+                            downloaded: this.state.downloaded + 1
+                        })
+                    });
+                } else if (responseJson.status == 'error') {
+                    alert(responseJson.message)
+                }
+            }).catch((err) => alert(err));
+    }
+
     async download(src, path) {
         await RNFS.downloadFile({
             fromUrl: src,
@@ -357,6 +378,7 @@ class Sync extends Component {
             this.syncSku();
             this.syncPlan();
             this.syncCompetitionCategories();
+            this.syncExtendedCompetitionCategories();
             this.syncTrainings();
             this.syncTarget();
         })
@@ -464,7 +486,7 @@ class Sync extends Component {
         if(this.state.downloading) {
             downloading = (
                 <View>
-                    <Text>Pobieram {this.state.downloaded} / 5</Text>
+                    <Text>Pobieram {this.state.downloaded} / 6</Text>
                 </View>
             )
         }

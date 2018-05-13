@@ -32,13 +32,13 @@ class VisitExtendedCompetition extends Component {
 
     componentWillMount() {
 
-        AsyncStorage.getItem('@CandyMerch:competitionCategories').then((cats) => {
+        AsyncStorage.getItem('@CandyMerch:extendedCompetitionCategories').then((cats) => {
             if (cats) {
                 this.setState({
                     categories: JSON.parse(cats)
                 })
             } else {
-                fetch(API_URL + 'api/competition.php', {
+                fetch(API_URL + 'api/competition_categories.php', {
                     method: 'GET',
                     headers: {
                         Accept: 'application/json',
@@ -99,7 +99,18 @@ class VisitExtendedCompetition extends Component {
                     <View key={index} style={styles.list}>
 
                         <View style={{flex: 1}}>
-                            <Text style={{lineHeight: 28}}>{task.name}</Text>
+                            <View style={{flex: 0.3, flexDirection: 'row'}}>
+                                <Text style={{flex: 10}}>
+                                    {task.name}
+                                </Text>
+                                <TouchableHighlight style={{flex:1}} onPress={() => {
+                                    let task = this.state.task;
+                                    task.splice(index,1);
+                                    this.setState({task});
+                                }}>
+                                    <Text>usuń</Text>
+                                </TouchableHighlight>
+                            </View>
                             <View style={{flex: 1, flexDirection: 'row'}}>
                                 <View style={{flex: 2}}>
                                     <Text style={styles.smallTitle}>Marka</Text>
@@ -205,6 +216,46 @@ class VisitExtendedCompetition extends Component {
             )
         } else {
 
+            let bottom;
+
+            if(this.state.task.length > 0) {
+                bottom = <View style={{flexDirection: 'row'}}>
+                    <View style={{flex: 1}}>
+                        <CloseModal closeModal={() => {
+                            this.updateTask();
+                            this.toggleModal()
+                        }}/>
+                    </View>
+                    <View style={{flex: 1}}>
+                        <Button onPress={() => {
+                            let ind = this.state.task.length - 1;
+                            let lastTask = this.state.task[ind];
+                            let newTask = {
+                                visit_extended_competition_brand: '',
+                                visit_extended_competition_category_id: lastTask.visit_extended_competition_category_id,
+                                name: lastTask.name,
+                                visit_extended_competition_model: '',
+                                visit_extended_competition_prices: ''
+                            }
+
+
+                            let task = this.state.task;
+                            task.push(newTask);
+                            this.setState({
+                                task
+                            })
+
+
+                        }} title={'Dodaj'}/>
+                    </View>
+                </View>
+            }else{
+                bottom = <CloseModal closeModal={() => {
+                    this.updateTask();
+                    this.toggleModal()
+                }}/>
+            }
+
             return (
                 <View>
                     <Modal
@@ -217,7 +268,7 @@ class VisitExtendedCompetition extends Component {
                         <View style={{flex: 1}}>
                             <Text style={styles.modalTitle}>Rozszerzone Badanie konkurencji</Text>
                             <Text style={{fontSize: 16, textAlign: 'center', marginLeft: 10, marginRight: 10, marginBottom: 10}}>{this.props.taskObj.additional_task_description}</Text>
-                            <Button title="Dodaj wpis" onPress={() => this.setState({
+                            <Button title="Wybierz kategorię" onPress={() => this.setState({
                                 modalCategoryVisible: true
                             })} style={{margin: 5}}/>
                             <ScrollView style={{flex: 12}}>
@@ -225,10 +276,7 @@ class VisitExtendedCompetition extends Component {
                                 {taskList}
 
                             </ScrollView>
-                            <CloseModal closeModal={() => {
-                                this.updateTask();
-                                this.toggleModal()
-                            }}/>
+                            {bottom}
                         </View>
                     </Modal>
                     <Stage openModal={this.toggleModal} title="Rozszerzone badanie konkurencji"/>

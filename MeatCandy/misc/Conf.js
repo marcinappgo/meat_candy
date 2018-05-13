@@ -1,1 +1,1 @@
-export const API_URL = 'https://candystage.meatnet.pl/';
+export const API_URL = 'https://candy.meatnet.pl/';
