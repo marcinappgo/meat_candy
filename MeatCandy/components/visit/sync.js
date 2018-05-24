@@ -1,11 +1,15 @@
 import React, {Component} from 'react'
-import {AsyncStorage, ScrollView, View, Text, TouchableOpacity, Alert, NativeModules} from 'react-native'
+import {
+    AsyncStorage, ScrollView, View, Text, TouchableOpacity, Alert, NativeModules,
+    TouchableHighlight, Dimensions
+} from 'react-native'
 import {connect} from 'react-redux'
 import Button from '../../containers/button'
 import styles from '../../containers/styles'
 import HomeNav from '../../containers/home-nav'
 import RNFS from 'react-native-fs'
 import {API_URL} from "../../misc/Conf";
+import * as Progress from 'react-native-progress';
 
 const mapStateToProps = (state) => {
     return {
@@ -16,7 +20,7 @@ const mapStateToProps = (state) => {
 class Sync extends Component {
 
     static navigationOptions = {
-        title: <HomeNav title="Synchronizacja i dane" />
+        title: <HomeNav title="Synchronizacja i dane"/>
     };
 
 
@@ -31,8 +35,11 @@ class Sync extends Component {
             visitStack: {},
             workTimeState: [],
             downloading: false,
-            downloaded: 0
+            downloaded: 0,
+            visitsInPlan: [],
+            visitsInSync: []
         }
+
     }
 
     componentWillMount() {
@@ -77,22 +84,112 @@ class Sync extends Component {
         }).catch((err) => console.warn(err))
 
         await AsyncStorage.getItem('@CandyMerch:workTimeState').then((state) => {
-            if(state) {
+            if (state) {
                 state = JSON.parse(state);
-            }else{
+            } else {
                 state = [];
             }
 
             this.setState({
-                workTimeState : state
+                workTimeState: state
             })
         });
 
-        await AsyncStorage.getAllKeys()
+        // await AsyncStorage.getAllKeys()
+
+        await fetch(API_URL + 'api/visit-info.php', {
+            method: 'GET',
+            headers: {
+                Accept: 'application/json',
+                'User-Token': this.props.token
+            }
+        })
+            .then((r) => r.json())
+            .then(async (r) => {
+
+                if (r.status == "success") {
+
+                    let visits = [];
+
+                    for (let i in r.response.plan) {
+
+                        await AsyncStorage.getItem('@CandyMerch:visitDetails' + i).then((details) => {
+                            if (details) {
+                                let visit = JSON.parse(details);
+
+                                if (visit.visit_obj.visit_plan_visit_id < 0) {
+
+                                    if (r.response.plan[i] > 0) {
+                                        visit.visit_obj.visit_plan_visit_id = r.response.plan[i]
+                                    }
+                                    visits.unshift(visit);
+                                }
+
+                            }
+                        })
+                    }
+
+                    this.setState({
+                        visitsInPlan: visits
+                    })
+                } else {
+                    console.error(r.message);
+                }
+
+
+            });
     }
 
-    componentDidMount() {
+    async componentDidMount() {
 
+
+    }
+
+    async sendSingleVisit(visit) {
+        if (visit.visit_obj.visit_plan_visit_id > 0) {
+            Alert.alert("Wizyta zsynchronizowana")
+        } else {
+            Alert.alert("Wizyta do synchronizacji", "Czy zsynchronizować wizytę?", [
+                {
+                    text: 'Tak', onPress: async () => {
+
+                    let vis = this.state.visitsInSync;
+
+                    if (vis.indexOf(visit.visit_obj.visit_plan_id) == -1) {
+                        vis.push(visit.visit_obj.visit_plan_id)
+                        this.setState({
+                            visitsInSync: vis
+                        })
+                    }
+
+
+                    let ret = await this.sendVisit(visit);
+                    if (vis.indexOf(visit.visit_obj.visit_plan_id) > -1) {
+                        vis.splice(vis.indexOf(visit.visit_obj.visit_plan_id), 1)
+                        this.setState({
+                            visitsInSync: vis
+                        })
+                    }
+
+                    if (ret) {
+
+                        Alert.alert("Wizyta zsynchronizowana")
+                    } else {
+                        Alert.alert("Błąd synchronizacji")
+                        visit.visit_obj.visit_plan_visit_id = -3;
+                        await AsyncStorage.setItem('@CandyMerch:visitDetails' + visit.visit_obj.visit_plan_id, JSON.stringify(visit));
+                    }
+
+
+                    await this.loadData()
+                }
+                },
+                {
+                    text: 'Nie', onPress: () => {
+                }
+                }
+            ])
+        }
     }
 
     async sendVisit(visit) {
@@ -101,15 +198,18 @@ class Sync extends Component {
 
         fd.append('visit', JSON.stringify(visit));
 
-        for(let i in visit.images) {
-            fd.append('files['+visit.images[i].source+']', {uri : visit.images[i].source, type: 'image/jpeg', name: visit.images[i].source.replace(/^.*[\\\/]/, '')});
+        for (let i in visit.images) {
+            fd.append('files[' + visit.images[i].source + ']', {
+                uri: visit.images[i].source,
+                type: 'image/jpeg',
+                name: visit.images[i].source.replace(/^.*[\\\/]/, '')
+            });
         }
-
 
 
         let $ret = false;
 
-        await fetch(API_URL + 'api/new-visit.php',{
+        await fetch(API_URL + 'api/new-visit.php', {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -118,27 +218,22 @@ class Sync extends Component {
             body: fd
         })
             .then(async (r) => {
-                // console.warn(await r.text());
                 return r.json();
             })
             .then((r) => {
 
-                 if(r.status == 'success') {
-                     $ret = true;
-                 }
-                 else
-                 {
-                     $ret = false;
-                     // console.warn(r);
-                     // console.warn(visit);
-                 }
+                if (r.status == 'success') {
+                    $ret = true;
+                }
+                else {
+                    $ret = false;
+                }
 
 
             })
             .catch((err) => {
                 $ret = false;
                 console.warn(err);
-                // alert(err)
             })
 
         return $ret;
@@ -155,13 +250,14 @@ class Sync extends Component {
 
             let success = await this.sendVisit(visit);
 
-            if(success) {
+            if (success) {
                 synced[key] = visit;
                 delete visits[key];
-            }else{
+            } else {
                 error[key] = visit;
-                // synced[key] = visit;
                 delete visits[key];
+                visit.visit_obj.visit_plan_visit_id = -3;
+                await AsyncStorage.setItem('@CandyMerch:visitDetails' + visit.visit_obj.visit_plan_id, JSON.stringify(visit));
             }
 
             this.setState({
@@ -182,12 +278,12 @@ class Sync extends Component {
 
     syncWorkTime() {
         AsyncStorage.getItem('@CandyMerch:workTimeState').then(state => {
-            if(state) {
+            if (state) {
 
                 let fd = new FormData;
                 fd.append('work-time', state);
 
-                fetch(API_URL + 'api/work-time.php',{
+                fetch(API_URL + 'api/work-time.php', {
                     method: "POST",
                     headers: {
                         Accept: 'application/json',
@@ -196,12 +292,12 @@ class Sync extends Component {
                     body: fd
                 }).then(() => {
                     state = JSON.parse(state);
-                    if(state.length) {
+                    if (state.length) {
                         state = [state.pop()]
-                    }else{
+                    } else {
                         state = [];
                     }
-                    AsyncStorage.setItem('@CandyMerch:workTimeState',JSON.stringify(state)).then(() => {
+                    AsyncStorage.setItem('@CandyMerch:workTimeState', JSON.stringify(state)).then(() => {
                         this.setState({
                             workTimeState: []
                         })
@@ -222,10 +318,10 @@ class Sync extends Component {
         }).then((response) => response.json())
             .then((responseJson) => {
                 if (responseJson.status == 'success') {
-                    AsyncStorage.setItem('@CandyMerch:sku',JSON.stringify(responseJson.response.products)).then(() => {
+                    AsyncStorage.setItem('@CandyMerch:sku', JSON.stringify(responseJson.response.products)).then(() => {
                         this.setState({
                             downloaded: this.state.downloaded + 1
-                        })
+                        }, this.syncAlert)
                     });
                 } else if (responseJson.status == 'error') {
                     alert(responseJson.message)
@@ -251,7 +347,7 @@ class Sync extends Component {
                     AsyncStorage.setItem('@CandyMerch:plan', JSON.stringify(responseJson.response.plan)).then(() => {
                         this.setState({
                             downloaded: this.state.downloaded + 1
-                        })
+                        }, this.syncAlert)
                     })
 
                 } else {
@@ -270,10 +366,10 @@ class Sync extends Component {
         }).then((response) => response.json())
             .then((responseJson) => {
                 if (responseJson.status == 'success') {
-                    AsyncStorage.setItem('@CandyMerch:competitionCategories',JSON.stringify(responseJson.response.categories)).then(() => {
+                    AsyncStorage.setItem('@CandyMerch:competitionCategories', JSON.stringify(responseJson.response.categories)).then(() => {
                         this.setState({
                             downloaded: this.state.downloaded + 1
-                        })
+                        }, this.syncAlert)
                     });
                 } else if (responseJson.status == 'error') {
                     alert(responseJson.message)
@@ -291,10 +387,10 @@ class Sync extends Component {
         }).then((response) => response.json())
             .then((responseJson) => {
                 if (responseJson.status == 'success') {
-                    AsyncStorage.setItem('@CandyMerch:extendedCompetitionCategories',JSON.stringify(responseJson.response.categories)).then(() => {
+                    AsyncStorage.setItem('@CandyMerch:extendedCompetitionCategories', JSON.stringify(responseJson.response.categories)).then(() => {
                         this.setState({
                             downloaded: this.state.downloaded + 1
-                        })
+                        }, this.syncAlert)
                     });
                 } else if (responseJson.status == 'error') {
                     alert(responseJson.message)
@@ -309,7 +405,7 @@ class Sync extends Component {
         });
     }
 
-    async  syncTrainings() {
+    async syncTrainings() {
         await fetch(API_URL + 'api/trainings.php', {
             method: 'GET',
             headers: {
@@ -322,7 +418,7 @@ class Sync extends Component {
                     let trainings = responseJson.response.trainings
 
                     for (let ind in trainings) {
-                        for(let ind2 in trainings[ind].materials) {
+                        for (let ind2 in trainings[ind].materials) {
                             let src = trainings[ind].materials[ind2].source;
 
                             var path = RNFS.ExternalDirectoryPath + '/' + ind + '-' + ind2 + '-' + src.replace(/^.*[\\\/]/, '');
@@ -337,7 +433,7 @@ class Sync extends Component {
                     AsyncStorage.setItem('@CandyMerch:trainings', JSON.stringify(trainings)).then(() => {
                         this.setState({
                             downloaded: this.state.downloaded + 1
-                        })
+                        }, this.syncAlert)
                     });
 
                 } else if (responseJson.status == 'error') {
@@ -355,16 +451,16 @@ class Sync extends Component {
             }
         }).then((r) => r.json())
             .then((r) => {
-            if(r.status == 'success') {
-                let targets = r.response.targets;
+                if (r.status == 'success') {
+                    let targets = r.response.targets;
 
-                AsyncStorage.setItem('@CandyMerch:targets', JSON.stringify(targets)).then(() => {
-                    this.setState({
-                        downloaded: this.state.downloaded + 1
-                    })
-                });
+                    AsyncStorage.setItem('@CandyMerch:targets', JSON.stringify(targets)).then(() => {
+                        this.setState({
+                            downloaded: this.state.downloaded + 1
+                        }, this.syncAlert)
+                    });
 
-            }
+                }
             }).catch((err) => console.warn(err));
     }
 
@@ -381,10 +477,10 @@ class Sync extends Component {
             this.syncExtendedCompetitionCategories();
             this.syncTrainings();
             this.syncTarget();
+            this.loadData();
         })
 
     }
-
 
 
     async syncForce() {
@@ -393,17 +489,16 @@ class Sync extends Component {
             let visits = this.state.visits;
             let error = this.state.error;
             let forced = 0;
-            for(let key of keys) {
-                if(/^@CandyMerch:visitDetails/.test(key)) {
+            for (let key of keys) {
+                if (/^@CandyMerch:visitDetails/.test(key)) {
                     await AsyncStorage.getItem(key).then(async (v) => {
-                        if(v) {
+                        if (v) {
 
                             visit = JSON.parse(v);
 
                             let vid = visit.visit_obj.visit_plan_id;
 
                             if (visit.visit_obj.visit_plan_visit_id < 0) {
-
 
 
                                 let success = await this.sendVisit(visit);
@@ -432,99 +527,190 @@ class Sync extends Component {
             }
 
             this.setState({
-                synced : synced,
-                visits : visits,
-                error : error
+                synced: synced,
+                visits: visits,
+                error: error
             }, () => {
                 AsyncStorage.setItem('@CandyMerch:visitToSync', JSON.stringify(this.state.visits));
                 AsyncStorage.setItem('@CandyMerch:visitSynced', JSON.stringify(this.state.synced));
                 AsyncStorage.setItem('@CandyMerch:visitErrorSync', JSON.stringify(this.state.error));
             })
 
-            alert('Wykonano próbę synchronizacji ('+forced+')');
+            alert('Wykonano próbę synchronizacji (' + forced + ')');
 
         })
     }
 
-    clearStorage() {
+    async clearStorage() {
 
-        Alert.alert('Czyszczenie danych zapisanych', 'Czy na pewno chcesz usunąć zapisane dane?',[
-            {text: 'Tak', onPress: () => {
-                AsyncStorage.getAllKeys().then((keys) => {
+        Alert.alert('Czyszczenie danych zapisanych', 'Czy na pewno chcesz usunąć zapisane dane?', [
+            {
+                text: 'Tak', onPress: () => {
+                AsyncStorage.getAllKeys().then(async (keys) => {
                     for (let key of keys) {
                         if (/^@CandyMerch:visit/.test(key) && key != '@CandyMerch:userToken') {
-                            AsyncStorage.removeItem(key).then(() => {
+                            await AsyncStorage.removeItem(key).then(() => {
                                 this.loadData()
+
+
                             })
                         }
                     }
+                    Alert.alert("Zakończono czyszczenie danych")
                 });
-            }},
-            {text: 'Nie', onPress: () => {}}
+            }
+            },
+            {
+                text: 'Nie', onPress: () => {
+            }
+            }
         ])
 
 
     }
 
+    syncAlert() {
+        if (this.state.downloaded == 6) {
+
+            this.setState({
+                downloaded: 0,
+                downloading: false
+            })
+
+            /*Alert.alert("Zakończono synchronizację", "", [
+                {
+                    text: "OK",
+                    onPress: () => {
+                        this.setState({
+                            downloaded : 0,
+                            downloading: false
+                        })
+                    }
+                }
+            ])*/
+        }
+    }
+
     render() {
 
-        let visits = Object.keys(this.state.visits).map((i) => <Text key={i}>{this.state.visits[i].visit_obj.pos_name}</Text>);
-        let synced = Object.keys(this.state.synced).map((i) => <Text key={i}>{this.state.synced[i].visit_obj.pos_name}</Text>);
-        let error = Object.keys(this.state.error).map((i) => <Text key={i}>{this.state.error[i].visit_obj.pos_name}</Text>);
+        let visits = Object.keys(this.state.visits).map((i) => <Text
+            key={i}>{this.state.visits[i].visit_obj.pos_name}</Text>);
+        let synced = Object.keys(this.state.synced).map((i) => <Text
+            key={i}>{this.state.synced[i].visit_obj.pos_name}</Text>);
+        let error = Object.keys(this.state.error).map((i) => <Text
+            key={i}>{this.state.error[i].visit_obj.pos_name}</Text>);
         let workTime = this.state.workTimeState.map((state, i) => {
 
             let date = new Date(state.date);
-            let text = state.state == 'start'?'Rozpoczęcie':'Zakończenie';
+            let text = state.state == 'start' ? 'Rozpoczęcie' : 'Zakończenie';
             return (
-                <Text key={i}>{text}{"\n"}{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}{"\n"}{date.getHours()}:{date.getMinutes()}</Text>
+                <Text
+                    key={i}>{text}{"\n"}{date.getDate()}/{date.getMonth() + 1}/{date.getFullYear()}{"\n"}{date.getHours()}:{date.getMinutes()}</Text>
             )
 
         })
 
         let downloading;
 
-        if(this.state.downloading) {
-            downloading = (
-                <View>
-                    <Text>Pobieram {this.state.downloaded} / 6</Text>
-                </View>
-            )
+        if (this.state.downloading) {
+
+
+            downloading = <View style={{alignItems: 'center'}}>
+                <Progress.Bar progress={this.state.downloaded / 6} width={Dimensions.get('window').width - 40}/>
+            </View>
+
+
         }
+
+        let visitsStack = this.state.visitsInPlan.map((visit, index) => {
+
+
+            let stylesArr = [];
+            let status = "do synchronizacji"
+
+            if (visit.visit_obj.visit_plan_visit_id > 0) {
+                status = "zsynchornizowana"
+                stylesArr.push(styles.selectedButton)
+
+            } else {
+                stylesArr.push(styles.button)
+                if (visit.visit_obj.visit_plan_visit_id == -2) {
+                    status = "odwołana"
+                    stylesArr.push(styles.posAplus)
+                } else {
+                    if (visit.visit_obj.visit_plan_visit_id == -3) {
+                        status = "błąd synchronizacji"
+                        stylesArr.push(styles.posAplus)
+                    }
+                }
+            }
+
+            let inSync;
+            if (this.state.visitsInSync.indexOf(visit.visit_obj.visit_plan_id) > -1) {
+                inSync = <Progress.Bar indeterminate={true} width={Dimensions.get('window').width - 100} color="#ffffff"
+                                       borderColor="#ffffff"/>
+            }
+
+
+            return (
+                <TouchableHighlight
+                    key={index}
+                    style={[stylesArr, {alignItems: null, padding: 5}]}
+                    onPress={() => {
+                        this.sendSingleVisit(visit)
+                    }}
+                >
+                    <View>
+                        <Text style={[{
+                            margin: 0,
+                            padding: 0
+                        }, styles.pos, visit.visit_obj.visit_plan_visit_id > 0 ? styles.selectedButtonText : styles.buttonText]}>
+                            <Text style={styles.posSubtitle}>Status: {status}</Text>{'\n'}
+                            {visit.visit_obj.pos_number} - {visit.visit_obj.pos_network}
+                            - {visit.visit_obj.pos_name}{"\n"}
+                            <Text style={styles.posSubtitle}>{visit.visit_obj.pos_address} - {visit.visit_obj.pos_city}
+                                - {(new Date(visit.details.visit_start_time).toISOString().split('T')[0])}</Text>
+                        </Text>
+                        {inSync}
+                    </View>
+                </TouchableHighlight>
+            )
+        })
 
         return (
             <View style={{flex: 1}}>
-                <View style={{flex: 6}}>
+                <View style={{flex: 8}}>
                     <ScrollView>
-                        <View style={{flex: 1, flexDirection: 'row'}}>
-                            <View style={{flex: 1}}>
-                                <TouchableOpacity style={styles.panel}>
-                                <Text style={styles.boldText}>Do synchornizacji</Text>
-                                {visits}
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{flex: 1}}>
-                                <TouchableOpacity style={styles.panel}>
-                                    <Text style={styles.boldText}>Zsynchronizowane</Text>
-                                    {synced}
-                                </TouchableOpacity>
-                            </View>
-                            <View style={{flex: 1}}>
-                                <TouchableOpacity style={styles.panel}>
-                                    <Text style={styles.boldText}>Błędy synchronizacji</Text>
-                                    {error}
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
+                        {/*<View style={{flex: 1, flexDirection: 'row'}}>*/}
+                        {/*<View style={{flex: 1}}>*/}
+                        {/*<TouchableOpacity style={styles.panel}>*/}
+                        {/*<Text style={styles.boldText}>Do synchornizacji</Text>*/}
+                        {/*{visits}*/}
+                        {/*</TouchableOpacity>*/}
+                        {/*</View>*/}
+                        {/*<View style={{flex: 1}}>*/}
+                        {/*<TouchableOpacity style={styles.panel}>*/}
+                        {/*<Text style={styles.boldText}>Zsynchronizowane</Text>*/}
+                        {/*{synced}*/}
+                        {/*</TouchableOpacity>*/}
+                        {/*</View>*/}
+                        {/*<View style={{flex: 1}}>*/}
+                        {/*<TouchableOpacity style={styles.panel}>*/}
+                        {/*<Text style={styles.boldText}>Błędy synchronizacji</Text>*/}
+                        {/*{error}*/}
+                        {/*</TouchableOpacity>*/}
+                        {/*</View>*/}
+                        {/*</View>*/}
+                        {visitsStack}
                     </ScrollView>
                     {downloading}
-                    <Button onPress={this.sync.bind(this)} title="Synchronizacja"/>
+
                 </View>
                 <View style={{flex: 4}}>
-
+                    <Button onPress={this.sync.bind(this)} title="Synchronizacja"/>
                     <Button onPress={this.clearStorage.bind(this)} title="Wyczyść zapisane dane"/>
 
-                    <Button onPress={this.syncForce.bind(this)} title="Wymuś synchronizację"/>
+                    {/*<Button onPress={this.syncForce.bind(this)} title="Wymuś synchronizację"/>*/}
                 </View>
             </View>
         )
